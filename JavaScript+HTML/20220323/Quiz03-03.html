@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+            //함수 선언부
+            function add_func(num1,num2){
+             var ret_value=0; 
+
+            ret_value=num1+num2;
+            return ret_value;
+            }
+        
+            function minus_func(num1,num2){
+             var ret_value=0; 
+
+            ret_value=num1-num2;
+            return ret_value;
+        }
+
+        function multi_func(num1,num2){
+             var ret_value=0; 
+
+            ret_value=num1*num2;
+            return ret_value;
+        }
+
+        function div_func(num1,num2){
+             var ret_value=0; 
+
+            ret_value=num1/num2;
+            return ret_value;
+        }
+
+        </script>
+ 
+        <script>
+        //전역 변수부
+        var m_num1=parseInt(prompt("숫자1","100"));
+        var m_num2=parseInt(prompt("숫자2","200"));
+        var result=0;
+        </script>
+       
+        <script>
+            //메인 코드부
+        result=add_func(m_num1,m_num2);
+        document.write(m_num1+"+"+m_num2+"="+result+"<br>");
+        
+        result=minus_func(m_num1,m_num2)
+        document.write(m_num1+"-"+m_num2+"="+result+"<br>")
+
+        result=multi_func(m_num1,m_num2)
+        document.write(m_num1+"*"+m_num2+"="+result+"<br>")
+
+        if(m_num2==0){
+            alert("0으로 나누면 안되요~!");
+            document.write("0으로 나누면 안되요~!")
+        }
+        else{result=div_func(m_num1,m_num2)
+        document.write(m_num1+"/"+m_num2+"="+result+"<br>")
+        }
+
+
+
+        </script>
+    </head>
+    <body>
+ 
+    </body>
+</html>

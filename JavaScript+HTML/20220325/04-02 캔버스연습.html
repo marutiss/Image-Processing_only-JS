@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        
+    </head>
+    <body>
+        <canvas id="canvas1" width="300" height="300"
+        style="background-color:rgb(193, 175, 211)"></canvas>
+
+        <script>
+            var canvas=document.getElementById('canvas1');//도화지 접근
+            var ctx=canvas.getContext('2d');//물감,붓이 들은 통
+
+            
+            //삼각형
+            ctx.beginPath();
+            ctx.lineWidth=3;
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, 300);
+            ctx.lineTo(150, 150);
+            ctx.lineTo(0, 0);
+            ctx.stroke();
+            ctx.closePath();
+
+            //사각형 그리기
+            ctx.beginPath();
+            ctx.strokeStyle='red'; //물감 고르기
+            ctx.lineWidth=10;
+            ctx.rect(50,50,100,100);//시작x 시작y 폭 높이
+            ctx.stroke();
+            ctx.closePath();
+
+            //원그리기
+            ctx.beginPath();
+            ctx.strokeStyle='black';
+            ctx.lineWidth=5;
+            ctx.arc(50,50,20,0,Math.PI*2);
+            ctx.stroke();
+            ctx.closePat();
+
+            
+        </script>
+
+    </body>
+</html>

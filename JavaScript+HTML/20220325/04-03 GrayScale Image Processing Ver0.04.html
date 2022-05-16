@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script lang="javascript">
+            // 전역 변수부
+            var inCanvas, inCtx, inPaper; // 입력 영상 관련
+            var inFile, inImage; // 입력 파일, 입력 이미지(원본, 2차원 배열)
+            var inH, inW; // 입력 영상의 높이x폭 ---> 256x256
+        </script>
+        <script lang="javascript">
+            // 함수부
+            function init() {  // 초기화 함수
+                inCanvas = document.getElementById('inCanvas'); // 도화지에 접근
+                inCtx = inCanvas.getContext('2d'); // 물감, 붓이 들은 통
+            }
+            // 선택한 파일을 읽어서 메모리(2차원 배열)에 넣고,  화면(캔버스)에 출력 (*중요*)
+            function readRawImage() {
+                inFile = document.getElementById("inFile").files[0]; // 선택한 파일
+                // (중요!) 이미지의 크기를 확인
+                inH = inW = 256;
+                // 영상 크기의 2차원 메모리 확보
+                inImage = new Array(inH) ;
+                for (var i=0; i<inH; i++)
+                    inImage[i] = new Array(inW);
+                // 캔버스 크기 지정
+                inCanvas.height = inH;
+                inCanvas.width = inW;
+                // 파일 --> 메모리
+                var reader = new FileReader();
+                reader.readAsBinaryString(inFile);
+                reader.onload = function () {
+                    var blob = reader.result; // 파일을 한 덩어리(blob)로 가져옴
+                    // 덩어리(blob)에서 한점한점 뽑아서, 우리 배열에 넣기.
+                    for(var i=0; i<inH; i++) {
+                        for (var k=0; k<inW; k++) {
+                            var sPixel = (i*inH + k); // 시작 위치
+                            var ePixel = (i*inH + k) + 1; // 끝 위치
+                            inImage[i][k] = blob.slice(sPixel, ePixel); // 0~1까지 뽑기 : 0만 뽑힘
+                        }
+                    }                
+                    //** 입력 메모리를 페이퍼에 출력한 후, 페이퍼를 캔버스에 붙이기 **
+                    inPaper = inCtx.createImageData(inH, inW); // 종이를 준비하기
+                    for(var i=0; i<inH; i++) {
+                        for (var k=0; k<inW; k++) {
+                            var px = inImage[i][k].charCodeAt(0); //'뙓'을 숫자(129)로 변경
+                            inPaper.data[ (i*inH + k)*4 + 0 ] = px; // Red
+                            inPaper.data[ (i*inH + k)*4 + 1 ] = px; // Green
+                            inPaper.data[ (i*inH + k)*4 + 2 ] = px; // Blue
+                            inPaper.data[ (i*inH + k)*4 + 3 ] = 255; // Alpha
+                        }
+                    }
+                    inCtx.putImageData(inPaper,0,0); // 종이를 캔버스 (0,0)에 붙이기 (왼쪽위 딱 붙여서)
+                }
+            }
+
+        </script>
+        <script lang="javascript">
+            function display() {
+                //** 입력 메모리를 페이퍼에 출력한 후, 페이퍼를 캔버스에 붙이기 **
+                inPaper = inCtx.createImageData(inH, inW); // 종이를 준비하기
+                for(var i=0; i<inH; i++) {
+                    for (var k=0; k<inW; k++) {
+                        var px = inImage[i][k].charCodeAt(0); //'뙓'을 숫자(129)로 변경
+                        inPaper.data[ (i*inH + k)*4 + 0 ] = px; // Red
+                        inPaper.data[ (i*inH + k)*4 + 1 ] = px; // Green
+                        inPaper.data[ (i*inH + k)*4 + 2 ] = px; // Blue
+                        inPaper.data[ (i*inH + k)*4 + 3 ] = 255; // Alpha
+                    }
+                }
+                inCtx.putImageData(inPaper,0,0); // 종이를 캔버스 (0,0)에 붙이기 (왼쪽위 딱 붙여서)
+            }
+
+            // ********* 영상처리 함수 모음 ************//
+            function addImage() {
+                var value = parseInt(prompt('숫자 입력:', '100'));
+                for(var i=0; i<inH; i++) {
+                    for (var k=0; k<inW; k++) {
+                        var pixel = inImage[i][k].charCodeAt(0); //'뙓'을 숫자(129)로 변경
+                        // ** 진짜 핵심 알고리즘
+                        if (pixel + value > 255)
+                            pixel=255;
+                        else
+                            pixel=pixel+value;
+                        //////////////////////
+                        inImage[i][k] = String.fromCharCode(pixel); // 숫자(229)를 '뉽'로 변경
+                    }
+                }
+                display();
+            }
+
+            function reverseImage() {
+                for(var i=0; i<inH; i++) {
+                    for (var k=0; k<inW; k++) {
+                        var pixel = inImage[i][k].charCodeAt(0); //'뙓'을 숫자(129)로 변경
+                        // ** 진짜 핵심 알고리즘
+                        pixel = 255 - pixel;
+                        //////////////////////
+                        inImage[i][k] = String.fromCharCode(pixel); // 숫자(229)를 '뉽'로 변경
+                    }
+                }
+                display();              
+
+            }
+
+
+        </script>
+
+
+
+    </head>
+    <body onload="init()">
+        <input type="file" id="inFile" onchange="readRawImage()" /><br>
+        <input type="button" id="addImage" value="밝게하기" onclick="addImage()"/>
+        <input type="button" id="reverseImage" value="영상 색상 반전" onclick="reverseImage()"/>
+        <br>
+        <canvas id="inCanvas" style="background-color:aqua"></canvas>
+
+    </body>
+</html>

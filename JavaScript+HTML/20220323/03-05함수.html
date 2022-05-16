@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+        //함수 선언부
+        function add_func(num1,num2){//변수이름 함수이름=식별자
+           // var num1=200; //지역변수와 전역변수는 이름은 동일하면 안된다.
+            //document.write("함수에서 출력해슴..<br>");
+
+            var ret_value=0; //계산해서 돌려줄 변수
+
+            ret_value=num1+num2;
+            return ret_value;
+        }
+
+        </script>
+
+        <script>
+        //전역 변수부
+        var m_num1=parseInt(prompt("숫자1","100"));
+        var m_num2=parseInt(prompt("숫자2","200"));
+        var result=0;
+        
+        </script>
+        
+        <script>
+        //메인 코드부
+        result=add_func(m_num1,m_num2);
+        document.write(m_num1+"+"+m_num2+"="+result+"<br>");
+        m_num1=prompt("숫자1","300");
+        m_num2=prompt("숫자1","400");
+        result=add_func(m_num1,m_num2);
+        document.write(m_num1+"+"+m_num2+"="+result+"<br>");
+        </script>
+    </head>
+    <body>
+ 
+    </body>
+</html>

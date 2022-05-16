@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+            function openText(){
+                var txtFile=document.getElementById("selectFile").files[0];
+                //선택한 파일
+
+                var reader=new FileReader();//파일객체를 준비
+                reader.onload=function(){//익명 함수-1회용 함수
+                    txtDiv.innerText=reader.result;
+                }
+                
+                reader.readAsText(txtFile);
+            
+            }
+           
+        </script>
+    </head>
+    <body>
+        <input type="file" id="selectFile" onchange="openText()"/>
+        <div id="txtDiv">
+            ..........
+        </div>
+    </body>
+</html>

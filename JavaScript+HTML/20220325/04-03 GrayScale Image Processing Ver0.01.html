@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+            //전역 변수부
+            var inCanvas,inCtx,inPaper; //입력영상관련
+            var inFile,inImage; //입력파일,입력이미지(원본,2차원배열)
+            var inH,inW;//입력 영상의 높이x폭 -->256x256
+
+
+
+        </script>
+        <script>
+            //함수부
+            function init(){//초기화함수
+                 inCanvas=document.getElementById('inCanvas');//도화지 접근
+                 inCtx=inCanvas.getContext('2d');//물감,붓이 들은 통
+            }
+            //선택한 파일을 읽어서 메모리(2차원 배열)에 넣고,화면(캔버스)에 출력
+
+            function readRawImage(){
+                 inFile=document.getElementById("inFile").files[0];
+                //중요! 이미지의 크기를 확인
+                inH=inW=256;    
+                //영상 크기의 2차원 매모리 확보
+                inImage=new Array(inH);
+                for(var i=0;i<inW;i++)
+                    inImage[i]=new Array(inW);
+                //캔버스 크기 지정
+                inCanvas.height=inH;
+                inCanvas.width=inW;
+
+                //파일 -->메모리
+                var reader=new FileReader();
+                reader.readAsBinaryString(inFile);
+                reader.onload=function(){
+                    var blob=reader.result; //파일을 한 덩어리(blob)로 가저옴
+                    //덩어리(blob)에서 한점한점 뽑아서, 우리배열에 넣기
+                    
+                    for(var i=0;i<inH;i++){
+                        for(var k=0; k<inW;k++){
+                            var sPixel=(i*inH+k);//시작위치
+                            var ePixel=(i+inH+k)+1;
+                            inImage[i][k]=blob.slice(sPixel,ePixel);//0~1까지 뽑기: 0만 뽑힘
+                        }
+                    }
+
+
+            
+            //**입력 메모리를 페이퍼에 출력한 후, 페이퍼를 켄버스에 붙이기
+            inPaper=inctx.createImageData(inH,inW);//종이 준비하기
+            for(var i=0;i<inH;i++){
+                        for(var k=0; k<inW;k++){
+                            var px=inImage[i][k].charCodeAt(0);//'뙗'을 숫자(129)로 변경
+                            inPaper.data[(i*inH+k)*4+0]=px; //red
+                            inPaper.data[(i*inH+k)*4+1]=px;//green
+                            inPaper.data[(i*inH+k)*4+2]=px;//blue
+                            inPaper.data[(i*inH+k)*4+3]=255;//Alpha
+                        
+                        
+                        }
+                    }
+                    inctx.putImageData(inPaper,0,0); //종이를 캔버스(0,0)에 붙이기
+
+
+                }  
+             }
+        </script>
+    </head>
+    <body onload="init()">
+        <input type="file" id="inFile" onchange="readRawImage()"/><br>
+        <canvas id="inCanvas" style="background-color:rgb(175, 207, 211)" ></canvas>
+    
+    </body>
+</html>

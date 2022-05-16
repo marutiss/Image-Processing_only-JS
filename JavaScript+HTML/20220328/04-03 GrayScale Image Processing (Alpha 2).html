@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+        //전역 변수부
+        var inCanvas, outCanvas, inCtx, outCtx, inPaper,outPaper; // 입력 영상 관련
+        var inFile; //RAW파일
+        var inImage,outImage; // 입력 파일, 출력 이미지(원본, 2차원 배열)
+        var inH, inW, outH, outW; // 입력 영상, 출력 영상의 높이x폭
+        </script>
+ 
+        <script>
+        //공통함수부
+        function init(){//초기화 함수
+                inCanvas = document.getElementById('inCanvas'); // 도화지에 접근
+                outCanvas = document.getElementById('outCanvas'); // 도화지에 접근
+                inCtx = inCanvas.getContext('2d'); // 물감, 붓이 들은 통
+                outCtx = outCanvas.getContext('2d'); // 물감, 붓이 들은 통
+           }
+        function openImage() {
+                inFile = document.getElementById("inFile").files[0]; // 선택한 파일
+                // (중요!) 이미지의 크기를 확인
+                inH = inW = Math.sqrt(inFile.size);
+        
+                // 영상 크기의 2차원 메모리 확보
+                inImage = new Array(inH) ;
+                for (var i=0; i<inH; i++)
+                    inImage[i] = new Array(inW);
+                // 캔버스 크기 지정
+                inCanvas.height = inH;
+                inCanvas.width = inW;
+                // 파일 --> 메모리
+                var reader = new FileReader();
+                reader.readAsBinaryString(inFile);
+                reader.onload = function () {
+                    var blob = reader.result; // 파일을 한 덩어리(blob)로 가져옴
+                    // 덩어리(blob)에서 한점한점 뽑아서, 우리 배열에 넣기.
+                    for(var i=0; i<inH; i++) {
+                        for (var k=0; k<inW; k++) {
+                            var sPixel = (i*inH + k); // 시작 위치
+                            var ePixel = (i*inH + k) + 1; // 끝 위치
+                            inImage[i][k] = blob.slice(sPixel, ePixel).charCodeAt(0); // 0~1까지 뽑기 : 0만 뽑힘
+                        }
+                    }                
+                    //** 입력 메모리를 페이퍼에 출력한 후, 페이퍼를 캔버스에 붙이기 **
+                    inPaper = inCtx.createImageData(inH, inW); // 종이를 준비하기
+                    for(var i=0; i<inH; i++) {
+                        for (var k=0; k<inW; k++) {
+                            var px = inImage[i][k]
+                            inPaper.data[ (i*inH + k)*4 + 0 ] = px; // Red
+                            inPaper.data[ (i*inH + k)*4 + 1 ] = px; // Green
+                            inPaper.data[ (i*inH + k)*4 + 2 ] = px; // Blue
+                            inPaper.data[ (i*inH + k)*4 + 3 ] = 255; // Alpha
+                        }
+                    }
+                    inCtx.putImageData(inPaper,0,0); // 종이를 캔버스 (0,0)에 붙이기 (왼쪽위 딱 붙여서)
+                }
+            }
+
+            function display() {
+                // ** 출력 메모리의 내용을 화면에 출력하기. **
+                outPaper = outCtx.createImageData(outH, outW); // 캔버스에 종이 붙이기 (크기는 캔버스 동일)
+                // 캔버스 크기 지정
+                outCanvas.height = outH;
+                outCanvas.width = outW;
+                for (var i=0; i<outH; i++) {
+                    for (var k=0; k<outW; k++) {
+                        var pix = outImage[i][k]; 
+                        outPaper.data[(i*outH + k) * 4 + 0] = pix; // Red
+                        outPaper.data[(i*outH + k) * 4 + 1] = pix; // Green
+                        outPaper.data[(i*outH + k) * 4 + 2] = pix; // Blue
+                        outPaper.data[(i*outH + k) * 4 + 3] = 255; // Alpha
+                    }
+                }
+                outCtx.putImageData(outPaper,0,0); // (0,0) 좌표에 붙여라.
+            }
+       
+            //-----------------------알고리즘--선택시작동--------
+        function selectAlgorithm(selectNum){
+            switch(parseInt(selectNum.value)){
+                case 100://동일영상
+                    equalImage();
+                    break;
+                case 101://영상반전
+                    reverseImage();
+                    break;
+                case 102:
+                    genImage();
+                    break;
+                case 103:
+                    paracap();
+                    break;
+                case 104:
+                avrImage();
+                break;
+                case 201://상하미러랑
+                    updnflipImage();
+                    break;
+                case 202://좌우미러링
+                    rlflipImage();
+                    break;
+                case 301:
+                    histoStretch();
+                    break;
+                case 302:
+                    endIn();
+                    break;
+                case 303://히스토그램 평활화
+                    histoEqual();
+                    break;
+
+
+                
+
+            }
+        }
+        </script>
+       
+        <script>
+        //영상처리함수부
+
+    //------------------화소점 처리 시작--------------------------------
+            function equalImage() { //동일영상출력
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        
+                        outImage[i][k] =inImage[i][k]
+                    }
+                }
+                display();
+            }
+            function reverseImage() { //흑백반전출력
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        var px=inImage[i][k];
+                        
+                        px=255-px
+
+                        outImage[i][k] =px;
+                    }
+                }
+                display();
+            }
+
+            function genImage() {
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        var px=inImage[i][k];
+                        
+                        if(px<128)
+                        px=0;
+                        else
+                        px=255;
+
+                        outImage[i][k] =px;
+                    }
+                }
+                display();
+            }
+
+            function avrImage() {
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                
+                var result=0;
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                         
+                        result+= inImage[i][k];
+                        
+                    }
+                }
+                
+               var avr=result/(inH*inW);
+
+                for(var i=0; i<inH; i++){
+                    for(var k=0; k<inW; k++){
+                        if(inImage[i][k]<avr)
+                        outImage[i][k]=0;
+                        else
+                        outImage[i][k]=255;
+                        
+                        
+                    }
+                }
+                    
+                display();
+            }
+
+            function paracap() { //파라볼라 Cap
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                //outV=255*(inV/127-1)*(inV/127-1);
+                var LUT=new Array(256);
+                for(var i=0;i<256;i++){
+                    var outV=255*(i/127 - 1)*(i/127 - 1);
+                    if(outV<0)
+                        outV=0;
+                    if(outV>255)
+                        outV=255;
+                    LUT[i]=outV;
+                }
+
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        outImage[i][k]=LUT[inImage[i][k]]
+                    }
+                }
+                display();
+            }
+//----------------------화소점 처리 끝------------------------------
+//--------------------기하학 처리 시작-----------------------------
+            function updnflipImage() { //상하반전출력
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        
+                        outImage[i][k] =inImage[outH-i-1][k]
+                    }
+                }
+                display();
+            }
+
+            function rlflipImage() { //좌우반전출력
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        
+                        outImage[i][k] =inImage[i][outH-k-1]
+                    }
+                }
+                display();
+            }
+//----------------------기하학 처리끝-------------------------
+
+//--------------------히스토그램 시작----------------------
+            function histoStretch() { //히스토그램 스트래칭
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                var minValue=inImage[0][0];
+                var maxValue=inImage[0][0];
+                //최대 최소 찾기
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        
+                        if(inImage[i][k]<minValue)
+                            minValue=inImage[i][k];
+                        if(inImage[i][k]>maxValue)
+                            maxValue=inImage[i][k];
+                    }
+                }
+
+                var LUT=new Array(256);
+                for(var i=0;i<256;i++){
+                    var outV=(i-minValue)/(maxValue-minValue) * 255.0;
+                    if(outV<0)
+                        outV=0;
+                    if(outV>255)
+                        outV=255;
+                    LUT[i]=outV;
+                }
+                 //out=[(in-minValue)/(maxValue-minValue)]*255
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        var inValue=inImage[i][k]; 
+                        
+                        outImage[i][k]=LUT[inImage[i][k]];
+                        
+                    }
+                }
+                display();
+            }
+
+            function endIn() { //엔드인
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+                // 출력 영상 크기의 2차원 메모리 확보
+                outImage = new Array(outH) ;
+                for (var i=0; i<outH; i++)
+                    outImage[i] = new Array(outW);
+                // ** 영상처리 알고리즘 구현
+                var minValue=inImage[0][0];
+                var maxValue=inImage[0][0];
+                //최대 최소 찾기
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        
+                        if(inImage[i][k]<minValue)
+                            minValue=inImage[i][k];
+                        if(inImage[i][k]>maxValue)
+                            maxValue=inImage[i][k];
+                    }
+                }
+                minValue=minValue+50;
+                maxValue=maxValue-50;
+                 //out=[(in-minValue)/(maxValue-minValue)]*255
+
+                 var LUT=new Array(256);
+                for(var i=0;i<256;i++){
+                    var outV=(i-minValue)/(maxValue-minValue) * 255.0;
+                    if(outV<0)
+                        outV=0;
+                    if(outV>255)
+                        outV=255;
+                    LUT[i]=outV;
+                }
+                for(var i=0; i<inH; i++) {
+                    for(var k=0; k<inW; k++) {
+                        
+                        outImage[i][k]=LUT[inImage[i][k]];
+                    }
+                }
+                display();
+            }
+
+            function histoEqual() {  // 히스토그램 평활화 알고리즘
+            // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+            outH = inH;
+            outW = inW;
+            // 출력 영상 크기의 2차원 메모리 확보
+            outImage = new Array(outH) ;
+            for (var i=0; i<outH; i++)
+                outImage[i] = new Array(outW);
+            // ** 영상처리 알고리즘 구현
+            // 1단계 : 히스토그램 (막대그래프 = 빈도수 카운트)
+            var histo = new Array(256);
+            for (var i=0; i<256; i++) // 초기화 0
+                histo[i] = 0;
+            for(var i=0; i<inH; i++) {
+                for(var k=0; k<inW; k++) {   
+                    histo[inImage[i][k]]++;
+                }
+            }
+            // 2단계 : 누적 히스토그램
+            var sumHisto = new Array(256);
+            for (var i=0; i<256; i++) // 초기화 0
+                sumHisto[i] = 0;
+            var sumValue = 0;
+            for (var i=0; i<256; i++) {
+                sumValue += histo[i];
+                sumHisto[i] = sumValue;
+            }
+            // 3단계 : 정규화된 누적 히스트고램
+            // n = sumHisto * ( 1 / 총픽셀수 ) * 최대픽셀밝기
+            var normalHisto = new Array(256);
+            for (var i=0; i<256; i++) // 초기화 0
+                normalHisto[i] = 0;
+            for (var i=0; i<256; i++)
+                normalHisto[i] = sumHisto[i] * ( 1 / (inH*inW)) * 255;
+            // 최종 : 정규화된 히스토그램을 적용해서 픽셀값 변환
+            for(var i=0; i<inH; i++) {
+                for(var k=0; k<inW; k++) {   
+                    outImage[i][k] = parseInt(normalHisto[inImage[i][k]]);
+                }
+            }
+            display();
+        }
+        </script>
+    </head>
+    <body onload="init()">
+        <h1>GrayScale Image Processing (Alpha 2)</h1>
+        <form>
+            <input type="file" id="inFile" onchange="openImage()"/><br>
+            <!-------------개별 선택창 생성-------------->
+        <select name='pixel' onchange="selectAlgorithm(this.form.pixel)">
+            <option value=0>선택하세요</option>
+            <optgroup label="화소점 처리"></optgroup>
+            <option value=100>동일영상</option>
+            <option value=101>영상반전</option>
+            <option value=102>흑백반전(128)</option>
+            <option value=103>파라볼라(Cap)</option>
+            <option value=104>흑백반전(평균)</option>
+        </optgroup>
+        </select>
+        <select name='geo' onchange="selectAlgorithm(this.form.geo)">
+            <option value=0>선택하세요</option>
+            <optgroup label="기하학 처리">
+            <option value=201>상하 미러링</option>
+            <option value=202>좌우 미러링</option>
+        </optgroup>
+        </select>
+        <select name='histo' onchange="selectAlgorithm(this.form.histo)">
+            <option value=0>선택하세요</option>
+            <optgroup label="히스토그램 처리"></optgroup>
+            <option value=301>히스토그램 스트레칭</option>
+            <option value=302>엔드인 탐색</option>
+            <option value=303>히스토그램 평활화</option>
+        </optgroup>
+        </select>
+        <select name='pxarea' onchange="selectAlgorithm(this.form.pxarea)">
+            <option value=0>선택하세요</option>
+            <optgroup label="화소영역">
+            <option value=401>상하 미러링</option>
+            <option value=402>좌우 미러링</option>
+        </optgroup>
+        </select>
+    </form>
+    <br>
+    <canvas id="inCanvas" style="background-color: aqua;"></canvas>
+    <canvas id="outCanvas" style="background-color: goldenrod;"></canvas>
+    </body>
+    
+</html>

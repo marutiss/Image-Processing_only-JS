@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+
+        function printImg(){
+               
+            for(var i=0;i<ROW;i++){
+            for(var k=0; k<COL;k++){
+               document.write(String(image[i][k]).padStart(3,'0')+"   ");
+                }
+           document.write("<br>");
+            }
+        document.write("<br>");
+        }
+        //영상 출력하기 위한 함수
+        function printImg_t(){
+               
+               for(var i=0;i<ROW;i++){
+               for(var k=0; k<COL;k++){
+                  document.write(String(tst_image[i][k]).padStart(3,'0')+"   ");
+                   }
+              document.write("<br>");
+               }
+           document.write("<br>");
+           }
+        //작업본을 출력하기 위한 함수   
+
+
+            var image;
+            var ROW=8;COL=8;
+            var tst_image;
+
+            image=new Array(ROW);
+            for(var i=0;i<ROW;i++)
+                image[i]=new Array(COL);
+           // 2차원 배열 준비(원본)
+
+
+           tst_image=new Array(ROW);
+            for(var i=0;i<ROW;i++)
+                tst_image[i]=new Array(COL);
+           // 2차원 배열 준비(작업본)
+
+            for(var i=0;i<ROW;i++){
+                for(var k=0;k<COL;k++){
+                    image[i][k]=Math.floor(Math.random()*256);
+                }
+            }
+            // 2차원 배열에 랜덤한 값 대입.
+            document.writeln("원본 ");
+            document.writeln("<br>");
+            printImg(); //원본 생성
+
+            for(var i=0;i<ROW;i++){
+                for(var k=0;k<COL;k++){
+                    tst_image[i][k]=255-image[i][k];
+                }
+            }
+            document.writeln("흑백반전 ")
+            document.writeln("<br>")
+            printImg_t(); //흑백반전출력
+
+            document.writeln("흑백반전 128기준 ")
+            document.writeln("<br>")
+            for(var i=0;i<ROW;i++){
+                for(var k=0;k<COL;k++){
+                    if(image[i][k]<128)
+                    tst_image[i][k]=0;
+                    else
+                    tst_image[i][k]=255;
+                }
+            }
+            printImg_t();
+            //흑백처리-128기준
+
+            var allnum=0, result=0;
+            for(var i=0;i<ROW;i++){
+                for(var k=0;k<COL;k++){
+                    allnum+=image[i][k];
+                }
+            }
+            result=allnum/64;
+            
+            document.writeln("평균값: "+result+" ");
+            document.writeln("<br>");
+            for(var i=0;i<ROW;i++){
+                for(var k=0;k<COL;k++){
+                    if(image[i][k]<result)
+                    tst_image[i][k]=0;
+                    else
+                    tst_image[i][k]=255;
+                }
+            }
+            printImg_t();
+            //흑백처리 평균값
+
+            
+
+
+
+            //상하좌우대칭
+        </script>
+    </head>
+    <body>
+ 
+    </body>
+</html>

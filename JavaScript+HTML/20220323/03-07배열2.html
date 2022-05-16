@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+           function printimg(){
+               //영상 출력하기
+       for(var i=0;i<ROW;i++){
+           for(var k=0; k<COL;k++){
+               document.write(String(image[i][k]).padStart(3,'0')+"   ");
+           }
+           document.write("<br>");
+       }
+       document.write("<br>");
+           }
+           
+           
+           
+           var image; //2차원 배열(영상 -->2차원 배열)
+            var ROW=5,COL=4; //5X4 크기의 영상 -->영상의 사이즈 알아냄
+            /* 이미지 한 점(pixel)의 값은 0~255 -->회색영상(GrayScale)
+            [   [1,2,3,4]   영상처리는 2차원의 값을 조작한다
+                [1,2,3,4]   0으로 어둡게 255로 밝게
+                [1,2,3,4]
+                [1,2,3,4]
+                [1,2,3,4]  ]
+            */
+           //영상의 크기와 동일한 빈 2차원 배열을 준비
+        image=new Array(ROW);
+        for(var i=0;i<ROW;i++)
+        image[i]=new Array(COL);
+       //영상파일-->2차원배열(메모리)
+       for(var i=0;i<ROW;i++){
+           for(var k=0; k<COL;k++){
+               image[i][k]=Math.floor(Math.random()*256);
+           }
+       }
+
+       printimg();
+
+       //영상을 밝게 하기
+       for(var i=0;i<ROW;i++){
+           for(var k=0; k<COL;k++){
+            if(image[i][k]+50>255){
+                image=255;
+            }
+            else{
+                image[i][k]+=50;
+           }
+        }
+    }
+
+        printimg();
+
+       
+
+       
+
+        </script>
+    </head>
+    <body>
+ 
+    </body>
+</html>

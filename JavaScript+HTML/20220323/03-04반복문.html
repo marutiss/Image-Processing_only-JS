@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script>
+            //1부터 100까지 합계
+            var hap=0; //초기화 꼭 하기 
+            for(var i=1; i<=100;i++){
+                hap=hap+i;
+            }
+           document.writeln("1부터 100까지 합: "+hap+"<br>")
+
+           var hap=0;
+            for(var i=1;i<=100;i++){
+                if(i%2==0)
+                hap=hap+i;
+            }
+            document.writeln("1부터 100까지 홀수 합: "+hap+"<br>")
+            /* for(var i=1;i<=100;i+=2){
+                 hap+=i;
+            }*/
+
+            var hap=0;
+            for(var i=12345;i<=67890;i++){
+                if(i%3789==0)
+                hap=hap+i; //hap+=i;
+            }
+            document.writeln("12345부터 67890까지 3789배수합: "+hap+"<br>")
+            
+
+            //2부터 1000까지 소수를 출력하고 합계내기
+            document.writeln("소수: "+2);
+            var hap=2; //2는 소수
+            for(var num=3; num<1001;num+=2){
+                var sosuYN=true; //기본은 트루
+                for(var un=2;un<num/2 +1 ;un++){
+                    if(num%un==0){
+                        sosuYN=false;
+                        break; //안되면 바로 버린다.
+                    }
+                }
+                if(sosuYN){
+                    document.writeln(", "+num);
+                }
+            }
+
+
+        </script>
+    </head>
+    <body>
+ 
+    </body>
+</html>
