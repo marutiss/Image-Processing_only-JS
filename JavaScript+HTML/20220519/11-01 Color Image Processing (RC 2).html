@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script>
+    // 전역 변수부
+    var inCanvas, outCanvas, inCtx, outCtx, inPaper, outPaper;  // 화면 관련 변수
+    var inFile; // 칼라 파일(PNG, JPG, BMP)
+    var inImage, outImage; // 입출력용 이미지 (3차원 배열)  --> 제일 중요
+    var inH, inW, outH, outW; // 영상의 높이와 폭
+</script>
+<script>
+    // 공통 함수부
+    var mousecheck=0;
+    function mouseChecking() {
+        if(document.getElementById("mouseCheck1").checked) {
+           mousecheck=1;
+        }
+        else if(mousecheck = document.getElementById("mouseCheck2").checked) {
+            alert("mouseCheck2");
+            mousecheck=2;
+        }
+        else if(mousecheck = document.getElementById("mouseCheck3").checked) {
+            alert("mouseCheck3");
+            mousecheck=3;
+        }
+    }
+    function init() {
+        inCanvas = document.getElementById('inCanvas'); // 도화지에 접근
+        outCanvas = document.getElementById('outCanvas'); // 도화지에 접근
+        inCtx = inCanvas.getContext('2d'); // 물감,붓이 들은 통
+        outCtx = outCanvas.getContext('2d'); // 물감,붓이 들은 통
+        openImage();
+    }
+    function openImage() {
+        // inFile = document.getElementById("inFile").files[0]; // 선택한 파일 "c:/html/picture01.png"
+        var fileNum = document.getElementById('fileNum').value;
+        if ( parseInt(fileNum) < 9)
+            fileNum = "0" + fileNum;
+        else
+            fileNum = fileNum;
+        var inFname = "Nature99(Small)/picture" + fileNum + ".jpg";
+        // 그림 파일 --> 이미지 객체
+        var inPicture = new Image();  // 빈 이미지 객체
+        inPicture.src = inFname;
+        inPicture.onload = function() {
+            // 중요! 입력 영상의 크기를 알아내기
+            inH = inPicture.height;
+            inW = inPicture.width;
+            // 캔버스 크기 조절
+            inCanvas.height = inH;
+            inCanvas.width = inW;
+            inCtx.drawImage(inPicture,0,0,inW,inH);
+            // 메모리 할당 (3차원 배열)
+            inImage = new Array(3); // 3면
+            for(var m=0; m<3; m++) {
+                inImage[m] = new Array(inH);
+                for(var i=0; i<inH; i++)
+                    inImage[m][i] = new Array(inW);
+            }
+            // *중요* 캔버스의 이미지(화면) --> 배열로 칼라 추출
+            var colorBlob = inCtx.getImageData(0,0,inW,inH); 
+            var R, G, B, Alpha;
+            for(var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    var pos = (i*inW + k) * 4; // 1픽셀 = 4byte
+                    R = colorBlob.data[pos+0]; // Red
+                    G = colorBlob.data[pos+1]; // Green
+                    B = colorBlob.data[pos+2]; // Blue
+                    // Alpha = colorBlob.data[pos+3]; // Alpha
+                    inImage[0][i][k] = R;
+                    inImage[1][i][k] = G;
+                    inImage[2][i][k] = B;                    
+                }
+            }
+
+
+        }
+    }
+
+    var hop=1;
+    function display() {
+            // 출력 메모리를 페이퍼에 출력하고, 페이퍼를 캔버스에 붙이기
+            outPaper = outCtx.createImageData(outW*hop, outH*hop); // 그림크기의 빈 종이를 준비
+            // 캔버스 크기
+            outCanvas.height = outH*hop;
+            outCanvas.width = outW*hop;
+            // 종이에 콕콕콕 찍기
+            for(var i=0; i<parseInt(outH*hop); i++) {
+                for (var k=0; k<parseInt(outW*hop); k++) {
+                   
+                    var newI=parseInt(i/hop);
+                    var newK=parseInt(k/hop);
+
+                    var R = outImage[0][newI][newK]; // 0~255 사이의 값
+                    var G = outImage[1][newI][newK]; // 0~255 사이의 값
+                    var B = outImage[2][newI][newK]; // 0~255 사이의 값
+                    outPaper.data[ (i*parseInt(outW*hop) + k)*4 + 0] = R; // Red
+                    outPaper.data[ (i*parseInt(outW*hop) + k)*4 + 1] = G; // Green
+                    outPaper.data[ (i*parseInt(outW*hop) + k)*4 + 2] = B; // Blue
+                    outPaper.data[ (i*parseInt(outW*hop) + k)*4 + 3] = 255; // Alpha
+                }
+            }
+            outCtx.putImageData(outPaper, 0, 0); // 종이를 캔버스에 붙이기.
+    }
+</script>
+
+<script>
+    // 영상처리 알고리즘
+    function selectAlgorithm(selectNum) {
+        algoNum = parseInt(selectNum.value);
+        switch(algoNum) {
+            case 101 : // 동일영상
+                equalImage();
+                break;
+            case 102 : // 밝게하기
+                plusImage_mouse();
+                break;
+            case 103 : //어둡게하기
+                minusImage_mouse();
+                break;
+            case 104 : // 그레이스케일
+                grayScaleImage_mouse();
+                break;
+            case 105://흑백반전
+                bwImage_mouse();
+                break;
+            case 106: //색반전
+                rvsImage_mouse();
+                break;
+            case 107: //명도증가
+                brtImage_mouse();
+                break;
+            case 108://명도감소
+                drkImage_mouse();
+                break;
+
+            case 503: //그레이스케일(자유마우스)
+                grayScaleImage_freemouse();
+                break;
+            case 504: //색반전(자유마우스)
+                rvsImage_freemouse();
+                break;
+            case 505://흑백반전
+                grayScaleImage_freemouse();
+                break;
+            case 506://명도증가
+                brtImage_freemouse();
+                break;
+            case 507://명도감소
+                drkImage_freemouse();
+                break;
+
+            case 201://상하반전
+                updnflipImage();
+                break;
+            case 202: //좌우반전
+                rlflipImage();
+                break;
+            case 203: //영상축소
+                zoomoutImage();
+                break;
+            case 204: //영상축소
+                zoominImage();
+                break;
+
+            case 301: //히스토그램 스트레칭
+                histoStretch();
+                break;
+            case 302: //엔드인
+                endIn();
+                break;
+            case 303: //히스토그램 평활화
+                histoEqual();
+                break;
+
+            case 901://채도변경
+                changeSatur();
+                break;
+            case 902: //오랜지추출
+                pickOrange();
+                break;
+
+        }
+    }
+    /////////////////////////화소점
+    function equalImage() {
+        // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+        outImage = new Array(3); // 3면 
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+        for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    outImage[rgb][i][k] = inImage[rgb][i][k];
+                }
+            }
+        }
+        display();
+    }
+    function plusImage() { //밝게
+        // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+        var value=parseInt(prompt("숫자:", "100"));
+        for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    if ( (startX <= k && k <= endX  ) && (startY <= i && i <= endY)) {
+                        if (inImage[rgb][i][k] + value > 255)
+                            outImage[rgb][i][k] = 255;
+                        else
+                            outImage[rgb][i][k] = inImage[rgb][i][k] + value;
+                        } 
+                    else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k]
+                    }
+                }
+            }
+        }
+        display();
+    }
+
+    function minusImage() { //어둡게
+        // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+        var value=parseInt(prompt("숫자:", "100"));
+        for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    if ( (startX <= k && k <= endX  ) && (startY <= i && i <= endY)) {
+                    if (inImage[rgb][i][k] - value < 0)
+                        outImage[rgb][i][k] = 0;
+                    else
+                        outImage[rgb][i][k] = inImage[rgb][i][k] - value;
+                    } 
+                    else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k]}
+                }
+            }
+        }
+        display();
+    }
+    
+    function brtImage() { //밝게
+        // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+       
+        for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    if ( (startX <= k && k <= endX  ) && (startY <= i && i <= endY)) {
+                        px=inImage[rgb][i][k] *1.5;
+                    if (px > 255)
+                        outImage[rgb][i][k] = 255;
+                    else 
+                    outImage[rgb][i][k] = px;
+                    } 
+                    else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k]
+                }
+
+                }
+            }
+        }
+        display();
+    }
+
+    function drkImage() { //어둡게
+        // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+            
+        for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    if ( (startX <= k && k <= endX  ) && (startY <= i && i <= endY)) {
+                    if (inImage[rgb][i][k] /2 < 0)
+                        outImage[rgb][i][k] = 0;
+                    else
+                        outImage[rgb][i][k] = inImage[rgb][i][k] /2;
+                    } 
+                    else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k]
+                }
+                }
+            }
+        }
+        display();
+    }
+    
+    function rvsImage() { //색반전
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                outH = inH;
+                outW = inW;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+                // ** 영상처리 알고리즘 구현
+                for (var rgb=0; rgb < 3; rgb++) {
+                    for (var i=0; i<inH; i++) {
+                        for (var k=0; k<inW; k++) {
+                            if ( (startX <= k && k <= endX  ) && (startY <= i && i <= endY)) {
+                        
+                        var px= inImage[rgb][i][k];
+                        px=255-px;
+                        outImage[rgb][i][k]=px;;
+                        
+                    } 
+                    else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k]
+                }
+
+                // 아니면 그냥 원래 값
+                }
+            }
+        }
+                display();
+            }
+
+    function grayScaleImage() {//그레이스케일
+        // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+        for (var rgb=0; rgb < 3; rgb++){
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    if ( (startX <= k && k <= endX  ) && (startY <= i && i <= endY)) {
+                        var hap = inImage[0][i][k] + inImage[1][i][k] + inImage[2][i][k];
+                        var avg = parseInt(hap / 3);
+
+                        outImage[0][i][k] = outImage[1][i][k] = outImage[2][i][k] = avg;
+                    } 
+                    else {
+                            outImage[rgb][i][k] = inImage[rgb][i][k]
+                    }
+
+                    // 아니면 그냥 원래 값
+                }
+            }
+        }
+
+        display();
+    }
+
+    function bwImage() {//흑백처리
+        // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        // outImage = new Integer[3][outH][outW]; // C제외하고 나머지 언어.
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+        for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+
+                    if ( (startX <= k && k <= endX  ) && (startY <= i && i <= endY)) {
+                        var hap = inImage[0][i][k] + inImage[1][i][k] + inImage[2][i][k];
+                        var avg = parseInt(hap / 3);
+                        if (avg > 127)
+                            outImage[rgb][i][k] = 255;
+                        else 
+                            outImage[rgb][i][k] = 0;
+                    } else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k];
+                    }
+                    
+
+
+                }
+            }
+        }
+        display();
+    }
+//-----------------------------HSV
+function rgb2hsv(r, g, b) {
+            var max = Math.max(r, g, b), min = Math.min(r, g, b),
+                d = max - min,
+                h,
+                s = (max === 0 ? 0 : d / max),
+                v = max / 255;
+
+            switch (max) {
+                case min: h = 0; break;
+                case r: h = (g - b) + d * (g < b ? 6: 0); h /= 6 * d; break;
+                case g: h = (b - r) + d * 2; h /= 6 * d; break;
+                case b: h = (r - g) + d * 4; h /= 6 * d; break;
+            }
+            return {
+                h: h,    s: s,    v: v
+            };
+        }
+
+function hsv2rgb(h, s, v) {
+    var r, g, b, i, f, p, q, t;
+
+    h = h*360;  s = s*100;    v = v*100;
+
+    // Make sure our arguments stay in-range
+    h = Math.max(0, Math.min(360, h));
+    s = Math.max(0, Math.min(100, s));
+    v = Math.max(0, Math.min(100, v));
+    
+    h /= 360;   s /= 100;     v /= 100;
+
+    i = Math.floor(h * 6);
+    f = h * 6 - i;
+    p = v * (1 - s);
+    q = v * (1 - f * s);
+    t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+    };
+}
+    
+function changeSatur() {
+    // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+    outH = inH;
+    outW = inW;
+    // 메모리 할당 (3차원 배열)
+    //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+    outImage = new Array(3); // 3면 
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 진짜 영상처리 알고리즘 **
+    var s_value=parseFloat(prompt("숫자입력(0~1)","-0.2"));
+
+    for (var i=0; i<inH; i++) {
+            for (var k=0; k<inW; k++) {
+                var R=inImage[0][i][k];
+                var G=inImage[1][i][k];
+                var B=inImage[2][i][k];
+                //RGB-->HSV
+                var hsv =rgb2hsv(R,G,B);
+                var H=hsv.h;
+                var S=hsv.s;
+                var V=hsv.v;
+                //체도변경
+                S=S+s_value;
+                //HSV-->RGB
+                var rgb=hsv2rgb(H,S,V);
+                R=rgb.r;
+                G=rgb.g;
+                B=rgb.b;
+                //출력이미지에 넣기
+                outImage[0][i][k]=R;
+                outImage[1][i][k]=G;
+                outImage[2][i][k]=B;
+
+            }
+        }
+    
+    display();
+}
+
+function pickOrange() {
+    // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+    outH = inH;
+    outW = inW;
+    // 메모리 할당 (3차원 배열)
+    //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+    outImage = new Array(3); // 3면 
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 진짜 영상처리 알고리즘 **
+    
+
+    for (var i=0; i<inH; i++) {
+            for (var k=0; k<inW; k++) {
+                var R=inImage[0][i][k];
+                var G=inImage[1][i][k];
+                var B=inImage[2][i][k];
+                //RGB-->HSV
+                var hsv =rgb2hsv(R,G,B);
+                var H=hsv.h;
+                var S=hsv.s;
+                var V=hsv.v;
+
+                //H범위를 추출. 오렌지 8~30(0~360)
+                if(8<=(H*360)&&(H*360)<=30){
+                    outImage[0][i][k]= inImage[0][i][k];
+                    outImage[1][i][k]= inImage[1][i][k];
+                    outImage[2][i][k]= inImage[2][i][k];
+
+                }else{
+                    var hap = inImage[0][i][k] + inImage[1][i][k] + inImage[2][i][k];
+                    var avg = parseInt(hap / 3);
+                    outImage[0][i][k] = outImage[1][i][k] = outImage[2][i][k] = avg;
+                }
+
+                
+
+            }
+        }
+    
+    display();
+}
+//////////////////////////////////////////////////////////////////////////////////////////
+//화소점(마우스)
+var pressYN=false;
+var startX,startY,endX,endY
+//마우스 공통함수-->
+function __downMouse(event) {  // 콜백 함수(Call Back)
+        startX = event.offsetX;
+        startY = event.offsetY;     
+        imageData = inCtx.getImageData(0,0,inCanvas.width,inCanvas.height);   
+        pressYN = true;  
+    }
+
+function __upMouse(event) {
+    pressYN = false;
+    endX = event.offsetX;
+    endY = event.offsetY;
+
+    //좌우상하 박스좌표가 필요
+    if(startX>endX){
+        temp=startX;
+        startX=endX;
+        endX=temp;
+    }
+    if(startY>endY) {
+        temp=startY;
+        startY=endY;
+        endY=temp;
+    }
+    inCanvas.removeEventListener("mousedown", __downMouse, false);
+    inCanvas.removeEventListener("mouseup", __upMouse, false);
+    inCanvas.removeEventListener("mousemove", __moveMouse, false);    
+    switch(algoNum) {
+        case 102 : // 밝게하기
+            plusImage();
+            break;
+        case 103 : // 어둡게하기
+            minusImage();
+            break;
+        case 104 : // 그레이스케일
+            grayScaleImage();
+            break;
+        case 105://흑백반전
+            bwImage();
+            break;
+        case 106: //색반전
+            rvsImage()
+            break;
+        case 107://명도증가
+            brtImage();
+            break;
+        case 108://명도 감소
+            drkImage();
+            break;
+    }
+    //영상처리
+    
+    
+}
+
+function __moveMouse(event) {
+    if (!pressYN)//(pressYN == false)
+        return;
+
+    inCtx.putImageData(imageData, 0, 0);
+
+    endX = event.offsetX;
+    endY = event.offsetY;
+    inCtx.beginPath(); // 선 그리기 시작
+    inCtx.strokeStyle='blue'; // 선 색상
+    inCtx.lineWidth = 5; // 선 두께
+    // 계획
+    inCtx.moveTo(startX, startY); // 볼펜 이동(선 안그려)
+    inCtx.rect(startX,startY,(endX-startX), (endY-startY));
+    // 실행
+    obj = inCtx.stroke();
+    inCtx.closePath(); // 선 그리기 끝
+}
+
+//<-- 마우스공통함수
+//////////////////////////////////////////////////////
+function plusImage_mouse() {//밝게하기
+        // 마우스 사용 체크 박스를 확인해서.... 마우스 입력 여부 결정
+        var mouseCheck = document.getElementById("mouseCheck");
+        if(!mouseCheck.checked) {
+            startX = 0;
+            startY = 0;
+            endX = inW;
+            endY = inH;
+
+            plusImage();
+            return;
+        }
+        inCanvas.addEventListener("mousedown", __downMouse, false);
+        inCanvas.addEventListener("mouseup", __upMouse, false);
+        inCanvas.addEventListener("mousemove", __moveMouse, false);
+    }  // function plusImage_mouse()
+
+function minusImage_mouse() {//어둡게하기
+    // 마우스 사용 체크 박스를 확인해서.... 마우스 입력 여부 결정
+    var mouseCheck = document.getElementById("mouseCheck");
+    if(!mouseCheck.checked) {
+        startX = 0;
+        startY = 0;
+        endX = inW;
+        endY = inH;
+
+        minusImage();
+        return;
+    }
+    inCanvas.addEventListener("mousedown", __downMouse, false);
+    inCanvas.addEventListener("mouseup", __upMouse, false);
+    inCanvas.addEventListener("mousemove", __moveMouse, false);
+}  // function minusImage_mouse()
+
+function bwImage_mouse() {//흑백반전
+        // 마우스 사용 체크 박스를 확인해서.... 마우스 입력 여부 결정
+        var mouseCheck = document.getElementById("mouseCheck");
+        if(!mouseCheck.checked) {
+            startX = 0;
+            startY = 0;
+            endX = inW;
+            endY = inH;
+            bwImage();
+            return;
+        }
+        inCanvas.addEventListener("mousedown", __downMouse, false);
+        inCanvas.addEventListener("mouseup", __upMouse, false);
+        inCanvas.addEventListener("mousemove", __moveMouse, false);
+    }  // function bwImage_mouse()
+
+function grayScaleImage_mouse() {//그레이스케일
+    // 마우스 사용 체크 박스를 확인해서.... 마우스 입력 여부 결정
+    var mouseCheck = document.getElementById("mouseCheck");
+    if(!mouseCheck.checked) {
+        startX = 0;
+        startY = 0;
+        endX = inW;
+        endY = inH;
+        grayScaleImage();
+        return;
+    }
+    inCanvas.addEventListener("mousedown", __downMouse, false);
+    inCanvas.addEventListener("mouseup", __upMouse, false);
+    inCanvas.addEventListener("mousemove", __moveMouse, false);
+}  // function grayScaleImage_mouse()
+
+function brtImage_mouse(){//명도증가
+    if(!mouseCheck.checked) {
+            startX = 0;
+            startY = 0;
+            endX = inW;
+            endY = inH;
+            brtImage();
+            return;
+        }
+
+    inCanvas.addEventListener("mousedown", __downMouse, false);
+    inCanvas.addEventListener("mouseup", __upMouse, false);
+    inCanvas.addEventListener("mousemove", __moveMouse, false);    
+
+
+}
+
+function rvsImage_mouse(){ //색반전(마우스)
+    if(!mouseCheck.checked) {
+            startX = 0;
+            startY = 0;
+            endX = inW;
+            endY = inH;
+            rvsImage();
+            return;
+        }
+    inCanvas.addEventListener("mousedown", __downMouse, false);
+    inCanvas.addEventListener("mouseup", __upMouse, false);
+    inCanvas.addEventListener("mousemove", __moveMouse, false);    
+
+}
+
+function drkImage_mouse(){ //명도감소(마우스)
+    if(!mouseCheck.checked) {
+            startX = 0;
+            startY = 0;
+            endX = inW;
+            endY = inH;
+            drkImage();
+            return;
+        }
+    inCanvas.addEventListener("mousedown", __downMouse, false);
+    inCanvas.addEventListener("mouseup", __upMouse, false);
+    inCanvas.addEventListener("mousemove", __moveMouse, false);    
+
+}
+
+//포인트인 폴리곤 알고리즘사용-----------------------------------------------------------------------------------------------------------------------------------
+//자유마우스------------------공통함수
+function pointInPolygon(pointArray, pntX, pntY){
+    crossCnt = 0; // 교차 횟수 
+    for( i = 0; i < pointArray.length-1; i++ ) {  // i,k는 다각형의 인접 선분. 
+        k = ( i + 1 ) ;  // 마지막 점과 첫점을 한 선분으로 처리하기 위함.
+        if( ( pointArray[i][1] > pntY) != ( pointArray[k][1] > pntY ) ) { 
+            atX = ( ( (pointArray[k][0] - pointArray[i][0] )/(pointArray[k][1] - pointArray[i][1] ) )
+                *( pntY - pointArray[i][1] ) ) + pointArray[i][0]; 
+            if( pntX < atX ) 
+                crossCnt++; 
+        } 
+    } 
+    // 홀수면 내부, 짝수면 외부에 있음 
+    if( 0 == ( crossCnt % 2 ) )
+        return false; 
+    else 
+        return true; 
+}
+var pntAry=[]; //마우스가 지나간 좌표들의 모음(대용량)
+var pointX,pointY;
+function __downFreeMouse(event){
+    pointX = event.offsetX;
+    pointY = event.offsetY;     
+    pntAry[0]=[pointX,pointY]; //폴리곤의 첫점 추가
+    pressYN = true;  
+}
+function __moveFreeMouse(event){
+    if(!pressYN)
+        return;
+
+    pointX = event.offsetX;
+    pointY = event.offsetY;   
+    pntAry[pntAry.length]=[pointX,pointY];//포인트 배열의 마지막에 추가되기
+
+    pt1=pntAry[pntAry.length-2]; //마지막에서 2본째
+    pt2=pntAry[pntAry.length-1];//마지막 점
+
+    inCtx.beginPath(); // 선 그리기 시작
+    inCtx.strokeStyle='blue'; // 선 색상
+    inCtx.lineWidth = 5; // 선 두께
+    // 계획
+    inCtx.moveTo(pt1[0],pt1[1]); // 볼펜 이동(선 안그려)
+    inCtx.lineTo(pt2[0],pt2[1]);
+    // 실행
+    inCtx.stroke();
+    inCtx.closePath(); // 선 그리기 끝  
+    
+}
+function __upFreeMouse(event){
+    pressYN=false;
+    endX=event.offsetX;
+    endY=event.offsetY;
+    pntAry[pntAry.length]=[pointX,pointY];
+    pntAry[pntAry.length]= pntAry[0];
+
+    pt1=pntAry[pntAry.length-2]; //마지막에서 2본째
+    pt2=pntAry[pntAry.length-1];//마지막 점
+
+    inCtx.beginPath(); // 선 그리기 시작
+    inCtx.strokeStyle='blue'; // 선 색상
+    inCtx.lineWidth = 5; // 선 두께
+    // 계획
+    inCtx.moveTo(pt1[0],pt1[1]); // 볼펜 이동(선 안그려)
+    inCtx.lineTo(pt2[0],pt2[1]);
+    // 실행
+    inCtx.stroke();
+    inCtx.closePath(); // 선 그리기 끝  
+
+    inCanvas.removeEventListener("mousedown", __downFreeMouse, false);
+    inCanvas.removeEventListener("mouseup", __upFreeMouse, false);
+    inCanvas.removeEventListener("mousemove", __moveFreeMouse, false);    
+    
+    switch(algoNum) {
+        case 503 : // 그레이스케일
+            __grayScaleFreeImage();
+            break;
+        case 504 : // 색반전
+            __rvsFreeImage();
+            break;
+        case 505 : // 흑백반전
+            __bwFreeImage();
+            break;
+        case 506 : // 명도증가
+            __brtFreeImage();
+            break;
+        case 507 : // 명도증가
+            __drkFreeImage();
+            break;
+        }
+}
+//------------------------------자유마우스 공통함수끝
+//------------------------------자유마우스 기능
+function brtImage_freemouse(){
+    pntAry=[]; //기존값 초기화
+    inCanvas.addEventListener("mousedown", __downFreeMouse, false);
+    inCanvas.addEventListener("mouseup", __upFreeMouse, false);
+    inCanvas.addEventListener("mousemove", __moveFreeMouse, false);
+}
+
+function __brtFreeImage(){
+    // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+    outH = inH;
+    outW = inW;
+    // 메모리 할당 (3차원 배열)
+    //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+    outImage = new Array(3); // 3면 
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 진짜 영상처리 알고리즘 **
+    for (var rgb=0; rgb < 3; rgb++) {
+        for (var i=0; i<inH; i++) {
+            for (var k=0; k<inW; k++) {
+                if(pointInPolygon(pntAry,k,i)){
+                    px=inImage[rgb][i][k] *1.5;
+                    if (px > 255)
+                        outImage[rgb][i][k] = 255;
+                    else 
+                    outImage[rgb][i][k] = px;
+                    } 
+                    else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k]
+                    }
+            }
+        }
+    }
+    display();
+}
+
+function drkImage_freemouse(){
+    pntAry=[]; //기존값 초기화
+    inCanvas.addEventListener("mousedown", __downFreeMouse, false);
+    inCanvas.addEventListener("mouseup", __upFreeMouse, false);
+    inCanvas.addEventListener("mousemove", __moveFreeMouse, false);
+}
+
+function __drkFreeImage(){
+    // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+    outH = inH;
+    outW = inW;
+    // 메모리 할당 (3차원 배열)
+    //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+    outImage = new Array(3); // 3면 
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 진짜 영상처리 알고리즘 **
+    for (var rgb=0; rgb < 3; rgb++) {
+        for (var i=0; i<inH; i++) {
+            for (var k=0; k<inW; k++) {
+                if(pointInPolygon(pntAry,k,i)){
+                    if (inImage[rgb][i][k] /2 < 0)
+                        outImage[rgb][i][k] = 0;
+                    else
+                        outImage[rgb][i][k] = inImage[rgb][i][k] /2;
+                    } 
+                    else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k]
+                    }
+            }
+        }
+    }
+    display();
+}
+
+function rvsImage_freemouse(){
+    pntAry=[]; //기존값 초기화
+    inCanvas.addEventListener("mousedown", __downFreeMouse, false);
+    inCanvas.addEventListener("mouseup", __upFreeMouse, false);
+    inCanvas.addEventListener("mousemove", __moveFreeMouse, false);
+}
+
+function __rvsFreeImage(){
+    // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+    outH = inH;
+    outW = inW;
+    // 메모리 할당 (3차원 배열)
+    //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+    outImage = new Array(3); // 3면 
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 진짜 영상처리 알고리즘 **
+    for (var rgb=0; rgb < 3; rgb++) {
+        for (var i=0; i<inH; i++) {
+            for (var k=0; k<inW; k++) {
+                if(pointInPolygon(pntAry,k,i)){
+                outImage[rgb][i][k] = 255-inImage[rgb][i][k];
+                }
+                else{
+                    outImage[rgb][i][k] = inImage[rgb][i][k];
+                }
+            }
+        }
+    }
+    display();
+}
+
+function grayScaleImage_freemouse(){
+    pntAry=[]; //기존값 초기화
+    inCanvas.addEventListener("mousedown", __downFreeMouse, false);
+    inCanvas.addEventListener("mouseup", __upFreeMouse, false);
+    inCanvas.addEventListener("mousemove", __moveFreeMouse, false);
+}
+
+function __grayScaleFreeImage(){
+    // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+    outH = inH;
+    outW = inW;
+    // 메모리 할당 (3차원 배열)
+    //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+    outImage = new Array(3); // 3면 
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 진짜 영상처리 알고리즘 **
+    for (var rgb=0; rgb < 3; rgb++) {
+        for (var i=0; i<inH; i++) {
+            for (var k=0; k<inW; k++) {
+                if(pointInPolygon(pntAry,k,i)){
+                    var hap = inImage[0][i][k] + inImage[1][i][k] + inImage[2][i][k];
+                        var avg = parseInt(hap / 3);
+
+                        outImage[0][i][k] = outImage[1][i][k] = outImage[2][i][k] = avg;
+                    } 
+                    else {
+                            outImage[rgb][i][k] = inImage[rgb][i][k]
+                    }
+            }
+        }
+    }
+    display();
+}
+
+function bwImage_freemouse(){
+    pntAry=[]; //기존값 초기화
+    inCanvas.addEventListener("mousedown", __downFreeMouse, false);
+    inCanvas.addEventListener("mouseup", __upFreeMouse, false);
+    inCanvas.addEventListener("mousemove", __moveFreeMouse, false);
+}
+
+function __bwFreeImage(){
+    // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+    outH = inH;
+    outW = inW;
+    // 메모리 할당 (3차원 배열)
+    //outImage=new integer[3][outH][outW]//c제외 하고 나머지 언어
+    outImage = new Array(3); // 3면 
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 진짜 영상처리 알고리즘 **
+    for (var rgb=0; rgb < 3; rgb++) {
+        for (var i=0; i<inH; i++) {
+            for (var k=0; k<inW; k++) {
+                if(pointInPolygon(pntAry,k,i)){
+                    var hap = inImage[0][i][k] + inImage[1][i][k] + inImage[2][i][k];
+                        var avg = parseInt(hap / 3);
+                        if (avg > 127)
+                            outImage[rgb][i][k] = 255;
+                        else 
+                            outImage[rgb][i][k] = 0;
+                    } else {
+                        outImage[rgb][i][k] = inImage[rgb][i][k];
+                    }
+            }
+        }
+    }
+    display();
+}
+
+//-----------------------------------------------------------자유마우스 끝
+////////////////////////////////////////////////////////////////////////////////////////// 기하학변환
+
+    function updnflipImage() { //상하반전출력
+             // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+            outH = inH;
+            outW = inW;
+            // 메모리 할당 (3차원 배열)
+            outImage = new Array(3); // 3면
+            for(var m=0; m<3; m++) {
+                outImage[m] = new Array(outH);
+                for(var i=0; i<outH; i++)
+                    outImage[m][i] = new Array(outW);
+            }
+            // ** 영상처리 알고리즘 구현
+            for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    outImage[rgb][i][k] = inImage[rgb][outH-i-1][k];
+                }
+            }
+        }
+            display();
+        }
+
+    function rlflipImage(){
+         // 중요! 출력 영상 크기 결정 ---> 알고리즘에 의존
+        outH = inH;
+        outW = inW;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 진짜 영상처리 알고리즘 **
+        for (var rgb=0; rgb < 3; rgb++) {
+            for (var i=0; i<inH; i++) {
+                for (var k=0; k<inW; k++) {
+                    outImage[rgb][i][k] = inImage[rgb][i][outW-k+1];
+                }
+            }
+        }
+        display();
+    }
+
+    function zoomoutImage() {//영상축소 알고리즘
+                // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+                var scale=parseInt(prompt("배율:","2"));
+                outH = inH/scale; //출력의 크기가 입력보다 작아진다. -->축소영상
+                outW = inW/scale;
+               // 메모리 할당 (3차원 배열)
+                outImage = new Array(3); // 3면
+                for(var m=0; m<3; m++) {
+                    outImage[m] = new Array(outH);
+                    for(var i=0; i<outH; i++)
+                        outImage[m][i] = new Array(outW);
+                }
+                // ** 영상처리 알고리즘 구현
+                for (var rgb=0; rgb < 3; rgb++){
+                    for(var i=0; i<inH; i++) {
+                        for(var k=0; k<inW; k++) {
+                        outImage[rgb][parseInt(i/scale)][parseInt(k/scale)] =inImage[rgb][i][k]
+                        //화소를 겹치게 되는 형태?
+                    }
+                }
+            }
+                display();
+            }
+
+    function zoominImage() {//영상축소 알고리즘
+        // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+        var scale=parseInt(prompt("배율:","2"));
+        outH = inH*scale; //출력의 크기가 입력보다 작아진다. -->축소영상
+        outW = inW*scale;
+        // 메모리 할당 (3차원 배열)
+        outImage = new Array(3); // 3면
+        for(var m=0; m<3; m++) {
+            outImage[m] = new Array(outH);
+            for(var i=0; i<outH; i++)
+                outImage[m][i] = new Array(outW);
+        }
+        // ** 영상처리 알고리즘 구현
+        for (var rgb=0; rgb < 3; rgb++){
+            for(var i=0; i<outH; i++) {
+                for(var k=0; k<outW; k++) {
+                outImage[rgb][i][k] =inImage[rgb][parseInt(i/scale)][parseInt(k/scale)]
+                //화소를 겹치게 되는 형태?
+            }
+        }
+    }
+        display();
+    }
+//////////////////////////////////////////////////////////////////////////////////////////
+//히스토그램
+function histoStretch() { //히스토그램 스트래칭
+    // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+    outH = inH;
+    outW = inW;
+    // 출력 영상 크기의 3차원 메모리 확보
+    outImage = new Array(3); // 3면
+    var minValue= new Array(3);
+    var maxValue= new Array(3);
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 영상처리 알고리즘 구현
+    for (var rgb=0; rgb < 3; rgb++){
+        minValue[rgb]=inImage[rgb][0][0];
+        maxValue[rgb]=inImage[rgb][0][0];
+        }
+    //최대 최소 찾기
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<inH; i++) {
+            for(var k=0; k<inW; k++) {
+                
+                if(inImage[rgb][i][k]<minValue[rgb])
+                    minValue[rgb]=inImage[rgb][i][k];
+                if(inImage[rgb][i][k]>maxValue[rgb])
+                    maxValue[rgb]=inImage[rgb][i][k];
+            }
+        }
+    }
+    
+    var LUT=new Array(3);
+    for (var rgb=0; rgb < 3; rgb++){
+        LUT[rgb]=new Array(256);
+    }
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0;i<LUT[rgb].length;i++){ //룩업테이블 생성
+            LUT[rgb][i]=(i-minValue[rgb])/(maxValue[rgb]-minValue[rgb]) * 255.0;
+            if(LUT[rgb][i]<0)
+            LUT[rgb][i]=0;
+            if(LUT[rgb][i]>255)
+            LUT[rgb][i]=255;
+            
+        }
+    }
+        //out=[(in-minValue)/(maxValue-minValue)]*255
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<inH; i++) {
+            for(var k=0; k<inW; k++) {
+                var inValue=inImage[rgb][i][k]; 
+                
+                outImage[rgb][i][k]=LUT[rgb][inImage[rgb][i][k]];
+                
+            }
+        }
+    }
+    display();
+}
+
+function endIn() { //엔드인
+    // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+    outH = inH;
+    outW = inW;
+    // 출력 영상 크기의 3차원 메모리 확보
+    outImage = new Array(3); // 3면
+    var minValue= new Array(3);
+    var maxValue= new Array(3);
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 영상처리 알고리즘 구현
+    for (var rgb=0; rgb < 3; rgb++){
+        minValue[rgb]=inImage[rgb][0][0];
+        maxValue[rgb]=inImage[rgb][0][0];
+        }
+    //최대 최소 찾기
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<inH; i++) {
+            for(var k=0; k<inW; k++) {
+                
+                if(inImage[rgb][i][k]<minValue[rgb])
+                    minValue[rgb]=inImage[rgb][i][k];
+                if(inImage[rgb][i][k]>maxValue[rgb])
+                    maxValue[rgb]=inImage[rgb][i][k];
+            }
+        }
+    }
+            minValue[rgb]=minValue[rgb]+50;
+            maxValue[rgb]=maxValue[rgb]-50;
+                //out=[(in-minValue)/(maxValue-minValue)]*255
+    var LUT=new Array(3);
+    for (var rgb=0; rgb < 3; rgb++){
+        LUT[rgb]=new Array(256);
+    }
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0;i<LUT[rgb].length;i++){ //룩업테이블 생성
+            LUT[rgb][i]=(i-minValue[rgb])/(maxValue[rgb]-minValue[rgb]) * 255.0;
+            if(LUT[rgb][i]<0)
+            LUT[rgb][i]=0;
+            if(LUT[rgb][i]>255)
+            LUT[rgb][i]=255;
+            
+        }
+    }
+        //out=[(in-minValue)/(maxValue-minValue)]*255
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<inH; i++) {
+            for(var k=0; k<inW; k++) {
+                var inValue=inImage[rgb][i][k]; 
+                
+                outImage[rgb][i][k]=LUT[rgb][inImage[rgb][i][k]];
+                
+            }
+        }
+    }
+    display();
+}
+
+function histoEqual() {  // 히스토그램 평활화 알고리즘
+        // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+        outH = inH;
+        outW = inW;
+        // 출력 영상 크기의 3차원 메모리 확보
+    outImage = new Array(3); // 3면
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+         }
+        // ** 영상처리 알고리즘 구현
+        // 1단계 : 히스토그램 (막대그래프 = 빈도수 카운트)
+        var histo = new Array(3);
+        for (var rgb=0; rgb < 3; rgb++){
+        histo[rgb]=new Array(256);
+        } 
+        for (var rgb=0; rgb < 3; rgb++){
+            for (var i=0; i<histo[rgb].length; i++) // 초기화 0
+                histo[rgb][i] = 0;
+        }
+        for (var rgb=0; rgb < 3; rgb++){    
+            for(var i=0; i<inH; i++) {
+                for(var k=0; k<inW; k++) {   //이미지 값=histo배열 위치값
+                    histo[rgb][inImage[rgb][i][k]]++;  //따라서 특정 이미지 값이 몇번나왔는지 저장.
+                }
+            }
+        }
+        // 2단계 : 누적 히스토그램
+        var sumHisto = new Array(3);
+        for (var rgb=0; rgb < 3; rgb++){
+            sumHisto[rgb]=new Array(256);
+        } 
+        
+        for (var rgb=0; rgb < 3; rgb++){
+        for (var i=0; i<sumHisto[rgb].length; i++) // 초기화 0
+            sumHisto[rgb][i] = 0;}
+
+        var sumValue=Array(3);
+        for (var rgb=0; rgb < 3; rgb++)
+            sumValue[rgb] = 0;  //누적해서 sumHisto에 몇번 나왔는지 누적해서 기록. 누적값
+
+        for (var rgb=0; rgb < 3; rgb++){
+            for (var i=0; i<256; i++) {
+                sumValue[rgb] += histo[rgb][i];
+                sumHisto[rgb][i] = sumValue[rgb];
+            }
+        }
+        // 3단계 : 정규화된 누적 히스트고램
+        // n = sumHisto * ( 1 / 총픽셀수 ) * 최대픽셀밝기
+        var normalHisto = new Array(3);
+        for (var rgb=0; rgb < 3; rgb++){
+            normalHisto[rgb]=new Array(256);
+        } 
+        for (var rgb=0; rgb < 3; rgb++){
+            for (var i=0; i<256; i++) // 초기화 0
+                normalHisto[rgb][i] = 0;
+        }
+        for (var rgb=0; rgb < 3; rgb++){
+            for (var i=0; i<256; i++)
+                normalHisto[rgb][i] = sumHisto[rgb][i] * ( 1 / (inH*inW)) * 255;}  //계산해서 최저 명도부터 누적명도 기록
+        
+         // 최종 : 정규화된 히스토그램을 적용해서 픽셀값 변환
+        for (var rgb=0; rgb < 3; rgb++){
+            for(var i=0; i<inH; i++) {
+                for(var k=0; k<inW; k++) {   
+                    outImage[rgb][i][k] = parseInt(normalHisto[rgb][inImage[rgb][i][k]]); //최초픽셀부터 누적된 명도를 반올림처리해서 표현
+                }
+            }
+        }
+        display();
+    }
+
+
+//-----------------------화소영역-------------------------
+function embossing() {  // 엠보싱 알고리즘
+    // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+    outH = inH;
+    outW = inW;
+   // 출력 영상 크기의 3차원 메모리 확보
+   outImage = new Array(3); // 3면
+    var minValue= new Array(3);
+    var maxValue= new Array(3);
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 영상처리 알고리즘 구현
+    // (짱 중요!)
+    var mask = [    [ -1.0 , 0.0 , 0.0 ],
+                    [  0.0 , 0.0 , 0.0 ],
+                    [  0.0 , 0.0 , 1.0 ]            ];
+    // 임시 입력 배열 (입력배열 + 2), 마스크 계산을 위해 
+    var tmpInImage = new Array(3) ;
+    for (var rgb=0; rgb < 3; rgb++){
+        tmpInImage[rgb] = new Array(inH + 2) ;
+        for (var i=0; i<inH+2; i++)
+            tmpInImage[rgb][i] = new Array(inW + 2);
+    }
+    // 임시 입력 배열 초기화
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<inH+2; i++) {
+            for(var k=0; k<inW+2; k++) {  
+                tmpInImage[rgb][i][k] = 127;  // 개선의 여지가 있음..
+            }
+        }
+    }
+    // 입력영상 --> 임시입력영상의 가운데 쏙~
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<inH; i++) {
+            for(var k=0; k<inW; k++) {   
+                tmpInImage[rgb][i+1][k+1] = inImage[rgb][i][k];
+            }
+        }
+    }
+    // 임시 출력 영상 준비
+    var tmpOutImage = new Array(3) ;
+    for (var rgb=0; rgb < 3; rgb++){
+        tmpOutImage[rgb] = new Array(outH) ;
+        for (var i=0; i<outH; i++)
+            tmpOutImage[rgb][i] = new Array(outW);
+    }
+    // *** 영상처리 알고리즘 --> 회선연산
+    for(var rgb=0; rgb<3;rgb++){
+        for(var i=0; i<inH; i++) {
+            for(var k=0; k<inW; k++) {   
+                // 한점에 대해 처리
+                var S = 0; // 9개 곱한 합
+                for(var m=0; m<3; m++)
+                    for(var n=0; n<3; n++)
+                        S += tmpInImage[rgb][i+m][k+n] * mask[m][n];
+                tmpOutImage[rgb][i][k] = S;                    
+            }
+        }
+    }
+    // 후처리 : 마스크 합이 0 --> +127, 마스크 합이 1 --> X
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<outH; i++) 
+            for(var k=0; k<inW; k++) 
+                tmpOutImage[rgb][i][k] += 127;
+    }
+    // 임시 출력 영상 --> 출력 영상
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<outH; i++) 
+            for(var k=0; k<inW; k++) 
+                outImage[rgb][i][k] = parseInt(tmpOutImage[rgb][i][k]);
+    }
+    display();
+}
+
+
+function blurring() {  // 블러링 알고리즘 >>스무딩에도 쓰임
+    // 중요! 출력 영상의 크기를 결정 --> 알고리즘에 의존~
+    outH = inH;
+    outW = inW;
+    // 출력 영상 크기의 3차원 메모리 확보
+   outImage = new Array(3); // 3면
+    var minValue= new Array(3);
+    var maxValue= new Array(3);
+    for(var m=0; m<3; m++) {
+        outImage[m] = new Array(outH);
+        for(var i=0; i<outH; i++)
+            outImage[m][i] = new Array(outW);
+    }
+    // ** 영상처리 알고리즘 구현
+    // (짱 중요!)
+    var maskSize=parseInt(prompt("마스크 사이즈(3 이상 홀수입력):\n클수록 흐려집니다.", "3"));
+    var mask = new Array(maskSize);
+    for (var i=0; i<inH+(maskSize-1); i++) mask[i]=new Array(maskSize);
+    for(var i=0; i<maskSize; i++)
+        for(var k=0; k<maskSize; k++)
+            mask[i][k]=parseFloat(1/(maskSize*maskSize));
+    // 임시 입력 배열 (입력배열 + 2)
+    // 임시 입력 배열 (입력배열 + 2), 마스크 계산을 위해 
+    var tmpInImage = new Array(3) ;
+    for (var rgb=0; rgb < 3; rgb++){
+        tmpInImage[rgb] = new Array(inH + (maskSize-1)) ;
+        for (var i=0; i<inH+(maskSize-1); i++) 
+        tmpInImage[rgb][i] = new Array(inW + (mask.length-1));
+         // 임시 입력 배열 초기화
+        var addValue=0,maxValue[rgb]=inImage[0][0],minValue=inImage[0][0];
+        for (var i=0; i<inH+2; i++)
+            tmpInImage[rgb][i] = new Array(inW + 2);
+    }
+   
+    
+    
+    for (var rgb=0; rgb < 3; rgb++){
+        maxValue[rgb]=inImage[rgb][0][0];
+        minValue[rgb]=inImage[rgb][0][0];
+    }
+    var addValue=0
+    for(var i=0; i<inH; i++) {
+        for(var k=0; k<inW; k++) {
+            if(inImage[i][k]>maxValue[rgb]) maxValue[rgb]=inImage[i][k];
+            if(inImage[i][k]<minValue[rgb]) minValue[rgb]=inImage[i][k];
+        }
+    }
+    addValue=(maxValue+minValue)/2;
+    for(var i=0; i<inH+(maskSize-1); i++) {
+        for(var k=0; k<inW+(maskSize-1); k++) {  
+            tmpInImage[i][k] = addValue;
+        }
+    }
+    // 입력영상 --> 임시 입력 영상의 가운데로
+    for(var i=0; i<inH; i++) {
+        for(var k=0; k<inW; k++) {
+            tmpInImage[i+parseInt(maskSize/2)][k+parseInt(maskSize/2)]=inImage[i][k];
+        }
+    }
+    // 임시 출력 영상 준비
+    var tmpOutImage = new Array(outH);
+    for (var i=0; i<outH; i++) tmpOutImage[i] = new Array(outW);
+    // 영상 처리 알고리즘 --> 회선연산
+    for(var i=0; i<inH; i++) {
+        for(var k=0; k<inW; k++) {
+            // 한 점에 대해 처리
+            var s=0;    // 9개 곱한 합
+            for(var m=0;m<maskSize;m++)
+                for(var n=0;n<maskSize;n++)
+                    s+=tmpInImage[i+m][k+n]*mask[m][n];
+            tmpOutImage[i][k]=s;
+        }
+    }
+    // 임시 출력 영상 --> 출력 영상
+    for (var rgb=0; rgb < 3; rgb++){
+        for(var i=0; i<outH; i++)
+            for(var k=0; k<outW; k++)
+                outImage[rgb][i][k]=parseInt(tmpOutImage[rgb][i][k]);
+    }
+    display();
+}
+</script>
+
+</head>
+<body onload="init()">
+        <h1> Color Image Processing (RC 2)</h1>
+        <form>
+            <input type="number" id="fileNum" value="1" min="00" max="99" onchange="openImage()"/>
+            <input type="button" id="inFile" value="이미지 열기" onclick="openImage()" />
+            <input type="button" value="초기화" onclick="openImage()"/>
+            <input type="radio" name="mouseCheck" id="mouseCheck">영역표시<br>
+            <!--<input type="radio" name="mouseCheck" id="mouseCheck" onchange="mouseChecking()">영역 선택<br>
+            -->
+            <select name='pixel' onchange="selectAlgorithm(this.form.pixel)">
+                <option value=0> 선택하세요(화소점) </option>
+                <optgroup label = "화소점 처리">
+                <option value=101> 동일 영상 </option>
+                <option value=102> 밝게 하기 </option>
+                <option value=103> 어둡게하기 </option>
+                <option value=104> 그레이스케일 </option>
+                <option value=105> 흑백반전 </option>
+                <option value=106> 색반전 </option>
+                <option value=107> 밝게하기2 </option>
+                <option value=108> 어둡게하기2 </option>
+                
+                <option value=503> 그레이스케일(자유마우스) </option>
+                <option value=504> 색반전(자유마우스) </option>
+                <option value=505> 흑백반전(자유마우스) </option>
+                <option value=506> 명도증가(자유마우스) </option>
+                <option value=507> 명도감소(자유마우스) </option>
+
+                <option value=901> 채도변경 </option>
+                <option value=902> 오랜지색상 추출(CV) </option>
+
+                </optgroup>
+            </select>
+            <select name='geo' onchange="selectAlgorithm(this.form.geo)">
+                <option value=0>선택하세요</option>
+                <optgroup label="기하학 처리">
+                <option value=201>상하 미러링</option>
+                <option value=202>좌우 미러링</option>
+                <option value=203>영상축소</option>
+                <option value=204>영상확대</option>
+                </optgroup>
+            </select>
+            <select name='histo' onchange="selectAlgorithm(this.form.histo)">
+                <option value=0>선택하세요</option>
+                <optgroup label="히스토그램 처리"></optgroup>
+                <option value=301>히스토그램 스트레칭</option>
+                <option value=302>엔드인 탐색</option>
+                <option value=303>히스토그램 평활화</option>
+            </optgroup>
+            </select>
+            <select name='area' onchange="selectAlgorithm(this.form.area)">
+                <option value=0>선택하세요</option>
+                <optgroup label="화소영역">
+                <option value=401>엠보싱</option>
+                <option value=402>블러링</option>
+                
+            </optgroup>
+            </select>
+            <input type="button" value="화면확대" onclick="hop+=0.2;display()">
+            <input type="button" value="화면축소" onclick="hop-=0.2;display()">
+         </form>
+        <br>
+        <canvas id="inCanvas" style="background-color:aqua"></canvas>
+        <canvas id="outCanvas" style="background-color:goldenrod"></canvas>
+    </body>
+</html>
